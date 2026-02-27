@@ -10,6 +10,7 @@ This project is a Kotlin Spring Boot API using Hexagonal Architecture with Graph
 - **Value classes unwrap for JPA** - Use `.value` when mapping to entities
 - **`toDomain()` returns Either** - Database data could be invalid
 - **File uploads are two-step** - REST multipart upload first, then GraphQL mutation to attach metadata
+- **Manual upload UI is feature-flagged** - `/internal/cover-upload-test` is disabled unless explicitly enabled
 
 ## Key Patterns
 

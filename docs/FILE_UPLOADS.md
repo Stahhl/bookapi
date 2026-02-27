@@ -106,6 +106,31 @@ Configured in `application.yml`:
 - `bookapi.upload.cover.directory`
 - `bookapi.upload.cover.max-bytes`
 - `bookapi.upload.cover.ttl-hours`
+- `bookapi.upload.cover.test-ui.enabled` (default `false`)
+
+## Manual Test UI (Feature-Flagged)
+
+For manual human testing, there is a minimal internal page:
+
+- URL: `GET /internal/cover-upload-test`
+- Default: disabled
+
+Enable it locally:
+
+```bash
+BOOKAPI_UPLOAD_COVER_TEST_UI_ENABLED=true ./gradlew bootRun
+```
+
+The page lets you provide:
+
+- Book ID
+- Cover description text
+- Image file to upload
+
+Then it performs:
+
+1. REST upload (`POST /api/uploads/book-covers`)
+2. GraphQL attach (`attachBookCover`)
 
 ## Code Locations
 

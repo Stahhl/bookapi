@@ -138,6 +138,12 @@ Book cover uploads intentionally use a **hybrid API**:
 - GraphQL mutation is an API adapter for domain state transitions
 - Storage mechanism can change (local disk → object store) without changing domain contracts
 
+### Manual Testing UI
+
+- A minimal internal browser UI exists at `GET /internal/cover-upload-test`
+- It is protected by feature toggle `bookapi.upload.cover.test-ui.enabled` (default `false`)
+- This keeps test tooling out of production by default while still providing easy local validation
+
 ---
 
 ## Type Mapping Patterns

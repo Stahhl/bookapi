@@ -31,3 +31,5 @@ bookapi:
       directory: ${java.io.tmpdir}/bookapi/covers
       max-bytes: 5242880
       ttl-hours: 24
+      test-ui:
+        enabled: false

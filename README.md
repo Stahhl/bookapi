@@ -30,6 +30,7 @@ The server starts at http://localhost:8080
 | http://localhost:8080/h2-console | H2 Database Console |
 | `POST /api/uploads/book-covers` | Upload cover image binary (multipart) |
 | `GET /api/books/{bookId}/cover` | Download attached book cover |
+| `GET /internal/cover-upload-test` | Internal manual upload UI (feature-flagged, disabled by default) |
 
 ### H2 Console Connection
 
@@ -91,6 +92,12 @@ mutation {
 
 For full details and examples, see [docs/FILE_UPLOADS.md](./docs/FILE_UPLOADS.md).
 
+To enable the internal manual test UI locally:
+
+```bash
+BOOKAPI_UPLOAD_COVER_TEST_UI_ENABLED=true ./gradlew bootRun
+```
+
 ## Project Structure
 
 ```
@@ -101,7 +108,8 @@ src/main/kotlin/com/stahhl/bookapi/
 │   ├── errors/          # Typed error definitions
 │   └── repositories/    # Repository interfaces (ports)
 ├── infrastructure/      # Framework integrations
-│   └── persistence/     # JPA entities and repository implementations
+│   ├── persistence/     # JPA entities and repository implementations
+│   └── web/             # REST endpoints (uploads, internal test UI)
 └── graphql/             # API layer
     ├── types/           # GraphQL type representations
     ├── queries/         # Query resolvers
