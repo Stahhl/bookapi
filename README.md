@@ -28,6 +28,8 @@ The server starts at http://localhost:8080
 |----------|-------------|
 | http://localhost:8080/graphiql | GraphQL Playground |
 | http://localhost:8080/h2-console | H2 Database Console |
+| `POST /api/uploads/book-covers` | Upload cover image binary (multipart) |
+| `GET /api/books/{bookId}/cover` | Download attached book cover |
 
 ### H2 Console Connection
 
@@ -64,6 +66,30 @@ The server starts at http://localhost:8080
   }
 }
 ```
+
+## Cover Upload Workflow
+
+Book cover uploads use a two-step flow:
+
+1. Upload the image via REST (`POST /api/uploads/book-covers`) and receive an `uploadId`
+2. Attach it in GraphQL:
+
+```graphql
+mutation {
+  attachBookCover(
+    bookId: "11111111-1111-1111-1111-111111111111",
+    uploadId: "6b1c1bff-f1de-4d5d-9138-3e4dc1702f1d",
+    description: "Front cover art"
+  ) {
+    id
+    coverDescription
+    coverContentType
+    coverUrl
+  }
+}
+```
+
+For full details and examples, see [docs/FILE_UPLOADS.md](./docs/FILE_UPLOADS.md).
 
 ## Project Structure
 
@@ -106,6 +132,7 @@ For detailed architecture documentation, see [docs/ARCHITECTURE.md](./docs/ARCHI
 ## Documentation
 
 - [Architecture Guide](./docs/ARCHITECTURE.md) - Patterns, conventions, and how to add new entities
+- [File Uploads](./docs/FILE_UPLOADS.md) - Two-step cover upload process and API examples
 - [Arrow Patterns](./docs/ARROW.md) - Functional error handling reference
 - [GraphQL Kotlin](./docs/GRAPHQL_KOTLIN.md) - GraphQL Kotlin reference
 

@@ -80,3 +80,28 @@ sealed interface BookError : DomainError {
         override val message: String = "Author not found for book with author id: $authorId"
     }
 }
+
+/**
+ * Errors related to cover upload operations.
+ */
+sealed interface CoverUploadError : DomainError {
+    data class NotFound(val id: String) : CoverUploadError {
+        override val message: String = "Cover upload not found with id: $id"
+    }
+
+    data class ValidationFailed(val errors: List<String>) : CoverUploadError {
+        override val message: String = "Cover upload validation failed: ${errors.joinToString(", ")}"
+    }
+
+    data class InvalidData(val field: String, val reason: String) : CoverUploadError {
+        override val message: String = "Invalid cover upload data for field '$field': $reason"
+    }
+
+    data class Expired(val id: String) : CoverUploadError {
+        override val message: String = "Cover upload has expired: $id"
+    }
+
+    data class AlreadyConsumed(val id: String) : CoverUploadError {
+        override val message: String = "Cover upload has already been consumed: $id"
+    }
+}

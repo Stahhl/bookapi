@@ -18,6 +18,7 @@ data class Book private constructor(
     val isbn: IsbnScalar,
     val title: String,
     val authorId: IdScalar,
+    val cover: BookCover? = null,
 ) {
     companion object {
         /**
@@ -30,6 +31,7 @@ data class Book private constructor(
             isbn: IsbnScalar,
             title: String,
             authorId: IdScalar,
+            cover: BookCover? = null,
         ): Book {
             val errors = mutableListOf<String>()
 
@@ -48,6 +50,7 @@ data class Book private constructor(
                 isbn = isbn,
                 title = title.trim(),
                 authorId = authorId,
+                cover = cover,
             )
         }
 
@@ -59,7 +62,8 @@ data class Book private constructor(
             isbn: IsbnScalar,
             title: String,
             authorId: IdScalar,
-        ): Either<BookError, Book> = either { create(id, isbn, title, authorId) }
+            cover: BookCover? = null,
+        ): Either<BookError, Book> = either { create(id, isbn, title, authorId, cover) }
 
         /**
          * Creates a new Book with a random ID.
@@ -69,12 +73,14 @@ data class Book private constructor(
             isbn: IsbnScalar,
             title: String,
             authorId: IdScalar,
+            cover: BookCover? = null,
         ): Book =
             create(
                 id = IdScalar.random(),
                 isbn = isbn,
                 title = title,
                 authorId = authorId,
+                cover = cover,
             )
 
         /**
@@ -84,7 +90,8 @@ data class Book private constructor(
             isbn: IsbnScalar,
             title: String,
             authorId: IdScalar,
-        ): Either<BookError, Book> = either { createNew(isbn, title, authorId) }
+            cover: BookCover? = null,
+        ): Either<BookError, Book> = either { createNew(isbn, title, authorId, cover) }
     }
 
     /**
@@ -95,12 +102,14 @@ data class Book private constructor(
         title: String = this.title,
         authorId: IdScalar = this.authorId,
         isbn: IsbnScalar = this.isbn,
+        cover: BookCover? = this.cover,
     ): Book =
         create(
             id = this.id,
             isbn = isbn,
             title = title,
             authorId = authorId,
+            cover = cover,
         )
 
     /**
@@ -110,5 +119,6 @@ data class Book private constructor(
         title: String = this.title,
         authorId: IdScalar = this.authorId,
         isbn: IsbnScalar = this.isbn,
-    ): Either<BookError, Book> = either { update(title, authorId, isbn) }
+        cover: BookCover? = this.cover,
+    ): Either<BookError, Book> = either { update(title, authorId, isbn, cover) }
 }

@@ -39,11 +39,12 @@ src/main/kotlin/com/stahhl/bookapi/
 │   ├── errors/          # Sealed error interfaces
 │   └── repositories/    # Repository interfaces (ports)
 ├── infrastructure/
-│   └── persistence/     # JPA entities and repository implementations
+│   ├── persistence/     # JPA entities and repository implementations
+│   └── web/             # REST controllers (binary/file transport concerns)
 └── graphql/
     ├── types/           # GraphQL type representations
     ├── queries/         # Query resolvers
-    ├── mutations/       # Mutation resolvers (future)
+    ├── mutations/       # Mutation resolvers
     ├── scalars/         # Custom GraphQL scalar definitions
     └── config/          # GraphQL configuration
 ```
@@ -78,6 +79,7 @@ The infrastructure layer contains **adapters** that implement domain ports.
 | `*Entity.kt` | JPA entities for persistence | `BookEntity`, `AuthorEntity` |
 | `SpringData*Repository.kt` | Spring Data JPA interfaces | `SpringDataBookRepository` |
 | `Jpa*Repository.kt` | Adapter implementing domain port | `JpaBookRepository` |
+| `web/*Controller.kt` | REST endpoints for transport concerns | `BookCoverController` |
 
 **Key rules:**
 - Entities are separate from domain types
@@ -99,6 +101,42 @@ The GraphQL layer exposes the API and maps between GraphQL and domain types.
 - GraphQL types are separate from domain types
 - Query resolvers depend on domain repositories (not JPA)
 - Use `getOrElse` to handle `Either` results gracefully
+
+---
+
+## File Upload Architecture (Book Covers)
+
+Book cover uploads intentionally use a **hybrid API**:
+
+- REST handles file binary transport
+- GraphQL handles metadata/state association
+
+### Request Flow
+
+1. Client uploads binary to `POST /api/uploads/book-covers`
+2. API stores file and creates staged `CoverUpload` metadata
+3. API returns `uploadId`
+4. Client calls GraphQL mutation `attachBookCover(bookId, uploadId, description)`
+5. API validates upload state, stores cover metadata on `Book`, marks upload consumed
+
+### Domain and Port Design
+
+- `Book` owns optional `BookCover` metadata
+- `CoverUpload` models staged upload lifecycle (`expiresAt`, `consumedAt`)
+- `CoverUploadRepository` is a domain port with `Either<CoverUploadError, T>` returns
+
+### Persistence Design
+
+- `books` table stores cover metadata columns (`cover_storage_path`, `cover_content_type`, `cover_description`)
+- `cover_uploads` table stores staged upload records and lifecycle timestamps
+- `BookEntity.toDomain()` enforces cover field consistency (all null or all populated)
+
+### Why This Fits Hexagonal Architecture
+
+- Domain remains framework-agnostic and binary-agnostic
+- REST controller is an infrastructure adapter for multipart transport
+- GraphQL mutation is an API adapter for domain state transitions
+- Storage mechanism can change (local disk → object store) without changing domain contracts
 
 ---
 

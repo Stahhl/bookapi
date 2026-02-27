@@ -2,12 +2,15 @@ package com.stahhl.bookapi.graphql.integration
 
 import com.stahhl.bookapi.domain.repositories.AuthorRepository
 import com.stahhl.bookapi.domain.repositories.BookRepository
+import com.stahhl.bookapi.domain.repositories.CoverUploadRepository
 import com.stahhl.bookapi.domain.scalars.IdScalar
 import com.stahhl.bookapi.domain.scalars.IsbnScalar
 import com.stahhl.bookapi.domain.types.Author
 import com.stahhl.bookapi.domain.types.Book
+import com.stahhl.bookapi.domain.types.CoverUpload
 import com.stahhl.bookapi.infrastructure.persistence.SpringDataAuthorRepository
 import com.stahhl.bookapi.infrastructure.persistence.SpringDataBookRepository
+import com.stahhl.bookapi.infrastructure.persistence.SpringDataCoverUploadRepository
 import org.junit.jupiter.api.BeforeEach
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
@@ -36,11 +39,18 @@ abstract class GraphQLTestBase {
     @Autowired
     lateinit var springDataAuthorRepository: SpringDataAuthorRepository
 
+    @Autowired
+    lateinit var coverUploadRepository: CoverUploadRepository
+
+    @Autowired
+    lateinit var springDataCoverUploadRepository: SpringDataCoverUploadRepository
+
     /**
      * Clean up the database before each test for isolation.
      */
     @BeforeEach
     fun cleanDatabase() {
+        springDataCoverUploadRepository.deleteAll()
         springDataBookRepository.deleteAll()
         springDataAuthorRepository.deleteAll()
     }
@@ -104,6 +114,36 @@ abstract class GraphQLTestBase {
             ?: throw IllegalStateException("Failed to create test book")
         return bookRepository.save(book).getOrNull()
             ?: throw IllegalStateException("Failed to save test book")
+    }
+
+    /**
+     * Create and save a staged cover upload.
+     */
+    protected fun createTestCoverUpload(
+        originalFilename: String = "cover.png",
+        contentType: String = "image/png",
+        sizeBytes: Long = 1024,
+        storagePath: String = "/tmp/bookapi-test-covers/${IdScalar.random()}.png",
+        expiresAt: java.time.Instant = java.time.Instant.now().plusSeconds(3600),
+    ): CoverUpload {
+        val uploadedAt = if (expiresAt.isAfter(java.time.Instant.now())) {
+            java.time.Instant.now()
+        } else {
+            expiresAt.minusSeconds(60)
+        }
+
+        val upload = CoverUpload.createReadyEither(
+            id = IdScalar.random(),
+            storagePath = storagePath,
+            originalFilename = originalFilename,
+            contentType = contentType,
+            sizeBytes = sizeBytes,
+            uploadedAt = uploadedAt,
+            expiresAt = expiresAt,
+        ).getOrNull() ?: throw IllegalStateException("Failed to create test cover upload")
+
+        return coverUploadRepository.save(upload).getOrNull()
+            ?: throw IllegalStateException("Failed to save test cover upload")
     }
 
     /**

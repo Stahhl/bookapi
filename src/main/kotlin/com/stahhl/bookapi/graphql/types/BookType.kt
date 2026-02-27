@@ -18,6 +18,9 @@ data class BookType(
     val id: IdScalar = book.id
     val title: String = book.title
     val isbn: IsbnScalar = book.isbn
+    val coverDescription: String? = book.cover?.description
+    val coverContentType: String? = book.cover?.contentType
+    val coverUrl: String? = book.cover?.let { "/api/books/${book.id}/cover" }
 
     fun author(
         @GraphQLIgnore @Autowired authorRepository: AuthorRepository,

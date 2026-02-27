@@ -24,3 +24,10 @@ spring:
   sql:
     init:
       mode: always
+
+bookapi:
+  upload:
+    cover:
+      directory: ${java.io.tmpdir}/bookapi/covers
+      max-bytes: 5242880
+      ttl-hours: 24

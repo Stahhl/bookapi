@@ -401,6 +401,141 @@ class BookMutationIntegrationTest : GraphQLTestBase() {
     }
 
     @Nested
+    inner class `attachBookCover mutation` {
+
+        @Test
+        fun `attaches uploaded cover successfully`() {
+            // Given
+            val book = createTestBook(
+                title = "With Cover",
+                isbn = VALID_ISBN_13,
+                authorId = defaultAuthor.id
+            )
+            val upload = createTestCoverUpload(
+                originalFilename = "cover.png",
+                contentType = "image/png",
+            )
+
+            // When
+            val response = executeGraphQL("""
+                mutation {
+                    attachBookCover(
+                        bookId: "${book.id}",
+                        uploadId: "${upload.id}",
+                        description: "Front cover art"
+                    ) {
+                        id
+                        coverDescription
+                        coverContentType
+                        coverUrl
+                    }
+                }
+            """)
+
+            // Then
+            assertFalse(response.hasErrors, "Expected no errors but got: ${response.errors}")
+            assertEquals("Front cover art", response.extractData<String>("attachBookCover.coverDescription"))
+            assertEquals("image/png", response.extractData<String>("attachBookCover.coverContentType"))
+            assertEquals("/api/books/${book.id}/cover", response.extractData<String>("attachBookCover.coverUrl"))
+        }
+
+        @Test
+        fun `returns error when upload does not exist`() {
+            // Given
+            val book = createTestBook(
+                title = "Missing Upload",
+                isbn = VALID_ISBN_13,
+                authorId = defaultAuthor.id
+            )
+            val nonExistentUploadId = UUID.randomUUID()
+
+            // When
+            val response = executeGraphQL("""
+                mutation {
+                    attachBookCover(
+                        bookId: "${book.id}",
+                        uploadId: "$nonExistentUploadId",
+                        description: "Front cover art"
+                    ) {
+                        id
+                    }
+                }
+            """)
+
+            // Then
+            assertTrue(response.hasErrors, "Expected error for missing upload")
+            assertTrue(
+                response.errors.any { it.message.contains("upload", ignoreCase = true) && it.message.contains("not found", ignoreCase = true) },
+                "Expected upload not found error, got: ${response.errors.map { it.message }}"
+            )
+        }
+
+        @Test
+        fun `returns error when upload is expired`() {
+            // Given
+            val book = createTestBook(
+                title = "Expired Upload",
+                isbn = VALID_ISBN_13,
+                authorId = defaultAuthor.id
+            )
+            val expiredUpload = createTestCoverUpload(
+                expiresAt = java.time.Instant.now().minusSeconds(1),
+            )
+
+            // When
+            val response = executeGraphQL("""
+                mutation {
+                    attachBookCover(
+                        bookId: "${book.id}",
+                        uploadId: "${expiredUpload.id}",
+                        description: "Front cover art"
+                    ) {
+                        id
+                    }
+                }
+            """)
+
+            // Then
+            assertTrue(response.hasErrors, "Expected error for expired upload")
+            assertTrue(
+                response.errors.any { it.message.contains("expired", ignoreCase = true) },
+                "Expected expired upload error, got: ${response.errors.map { it.message }}"
+            )
+        }
+
+        @Test
+        fun `returns error for blank description`() {
+            // Given
+            val book = createTestBook(
+                title = "Blank Description",
+                isbn = VALID_ISBN_13,
+                authorId = defaultAuthor.id
+            )
+            val upload = createTestCoverUpload()
+
+            // When
+            val response = executeGraphQL("""
+                mutation {
+                    attachBookCover(
+                        bookId: "${book.id}",
+                        uploadId: "${upload.id}",
+                        description: "   "
+                    ) {
+                        id
+                    }
+                }
+            """)
+
+            // Then
+            assertTrue(response.hasErrors, "Expected error for blank description")
+            assertTrue(
+                response.errors.any { it.message.contains("description", ignoreCase = true) || it.message.contains("blank", ignoreCase = true) },
+                "Expected description validation error, got: ${response.errors.map { it.message }}"
+            )
+        }
+    }
+
+    @Nested
     inner class `deleteBook mutation` {
 
         @Test

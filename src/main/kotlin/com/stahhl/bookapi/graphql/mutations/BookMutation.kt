@@ -4,11 +4,15 @@ import arrow.core.getOrElse
 import com.expediagroup.graphql.server.operations.Mutation
 import com.stahhl.bookapi.domain.repositories.AuthorRepository
 import com.stahhl.bookapi.domain.repositories.BookRepository
+import com.stahhl.bookapi.domain.repositories.CoverUploadRepository
 import com.stahhl.bookapi.domain.scalars.IdScalar
 import com.stahhl.bookapi.domain.scalars.IsbnScalar
 import com.stahhl.bookapi.domain.types.Book
+import com.stahhl.bookapi.domain.types.BookCover
 import com.stahhl.bookapi.graphql.types.BookType
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 /**
  * GraphQL Mutation resolver for Book operations.
@@ -17,6 +21,7 @@ import org.springframework.stereotype.Component
 class BookMutation(
     private val bookRepository: BookRepository,
     private val authorRepository: AuthorRepository,
+    private val coverUploadRepository: CoverUploadRepository,
 ) : Mutation {
     /**
      * Create a new book.
@@ -95,4 +100,48 @@ class BookMutation(
     fun deleteBook(id: IdScalar): Boolean =
         bookRepository.deleteById(id)
             .getOrElse { error -> throw IllegalStateException(error.message) }
+
+    /**
+     * Attaches a staged cover upload to a book and stores the cover description.
+     */
+    @Transactional
+    fun attachBookCover(
+        bookId: IdScalar,
+        uploadId: IdScalar,
+        description: String,
+    ): BookType {
+        val existingBook = bookRepository.findById(bookId)
+            .getOrElse { error -> throw IllegalArgumentException(error.message) }
+            ?: throw IllegalArgumentException("Book not found with id: $bookId")
+
+        val upload = coverUploadRepository.findById(uploadId)
+            .getOrElse { error -> throw IllegalArgumentException(error.message) }
+            ?: throw IllegalArgumentException("Cover upload not found with id: $uploadId")
+
+        if (upload.isExpired(Instant.now())) {
+            throw IllegalArgumentException("Cover upload has expired: $uploadId")
+        }
+        if (upload.isConsumed()) {
+            throw IllegalArgumentException("Cover upload has already been consumed: $uploadId")
+        }
+
+        val cover = BookCover.createEither(
+            storagePath = upload.storagePath,
+            contentType = upload.contentType,
+            description = description,
+        ).getOrElse { error -> throw IllegalArgumentException(error.message) }
+
+        val updatedBook = existingBook.updateEither(cover = cover)
+            .getOrElse { error -> throw IllegalArgumentException(error.message) }
+
+        val savedBook = bookRepository.save(updatedBook)
+            .getOrElse { error -> throw IllegalStateException(error.message) }
+
+        val consumedUpload = upload.consumeEither()
+            .getOrElse { error -> throw IllegalArgumentException(error.message) }
+        coverUploadRepository.save(consumedUpload)
+            .getOrElse { error -> throw IllegalStateException(error.message) }
+
+        return BookType(savedBook)
+    }
 }

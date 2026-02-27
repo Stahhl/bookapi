@@ -4,6 +4,7 @@ import com.stahhl.bookapi.domain.errors.BookError
 import com.stahhl.bookapi.domain.scalars.IdScalar
 import com.stahhl.bookapi.domain.scalars.IsbnScalar
 import com.stahhl.bookapi.domain.types.Book
+import com.stahhl.bookapi.domain.types.BookCover
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import java.util.UUID
@@ -22,7 +23,8 @@ class BookEntityTest {
         isbn: IsbnScalar = IsbnScalar.fromUnsafe(validIsbn13),
         title: String = "The Pragmatic Programmer",
         authorId: IdScalar = validAuthorId,
-    ): Book = Book.createEither(id, isbn, title, authorId).getOrNull()!!
+        cover: BookCover? = null,
+    ): Book = Book.createEither(id, isbn, title, authorId, cover).getOrNull()!!
 
     @Nested
     inner class `from domain Book` {
@@ -51,6 +53,21 @@ class BookEntityTest {
             val entity = BookEntity.from(book)
 
             assertEquals(validIsbn13, entity.isbn)
+        }
+
+        @Test
+        fun `converts Book with cover metadata`() {
+            val cover = BookCover.createEither(
+                storagePath = "/tmp/covers/cover.png",
+                contentType = "image/png",
+                description = "Book front cover",
+            ).getOrNull()!!
+            val book = createValidBook(cover = cover)
+            val entity = BookEntity.from(book)
+
+            assertEquals(cover.storagePath, entity.coverStoragePath)
+            assertEquals(cover.contentType, entity.coverContentType)
+            assertEquals(cover.description, entity.coverDescription)
         }
     }
 
@@ -124,6 +141,24 @@ class BookEntityTest {
             assertTrue(result.isLeft())
             assertIs<BookError.ValidationFailed>(result.leftOrNull())
         }
+
+        @Test
+        fun `returns Left when cover fields are partially set`() {
+            val entity = BookEntity(
+                id = UUID.randomUUID(),
+                isbn = validIsbn13,
+                title = "Test Book",
+                authorId = UUID.randomUUID(),
+                coverStoragePath = "/tmp/covers/cover.png",
+                coverContentType = null,
+                coverDescription = "Cover",
+            )
+
+            val result = entity.toDomain()
+
+            assertTrue(result.isLeft())
+            assertIs<BookError.InvalidData>(result.leftOrNull())
+        }
     }
 
     @Nested
@@ -188,6 +223,24 @@ class BookEntityTest {
                 result.onRight { roundTrippedBook ->
                     assertEquals(originalBook.title, roundTrippedBook.title)
                 }
+            }
+        }
+
+        @Test
+        fun `round-trip preserves cover metadata`() {
+            val cover = BookCover.createEither(
+                storagePath = "/tmp/covers/cover.png",
+                contentType = "image/png",
+                description = "Cover description",
+            ).getOrNull()!!
+            val originalBook = createValidBook(cover = cover)
+
+            val entity = BookEntity.from(originalBook)
+            val result = entity.toDomain()
+
+            assertTrue(result.isRight())
+            result.onRight { roundTrippedBook ->
+                assertEquals(originalBook.cover, roundTrippedBook.cover)
             }
         }
     }

@@ -3,6 +3,7 @@ package com.stahhl.bookapi.graphql.types
 import com.stahhl.bookapi.domain.scalars.IdScalar
 import com.stahhl.bookapi.domain.scalars.IsbnScalar
 import com.stahhl.bookapi.domain.types.Book
+import com.stahhl.bookapi.domain.types.BookCover
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -18,7 +19,8 @@ class BookTypeTest {
         isbn: IsbnScalar = IsbnScalar.fromUnsafe(validIsbn13),
         title: String = "The Pragmatic Programmer",
         authorId: IdScalar = validAuthorId,
-    ): Book = Book.createEither(id, isbn, title, authorId).getOrNull()!!
+        cover: BookCover? = null,
+    ): Book = Book.createEither(id, isbn, title, authorId, cover).getOrNull()!!
 
     @Nested
     inner class `from domain Book` {
@@ -46,6 +48,21 @@ class BookTypeTest {
             val bookType = BookType(book)
 
             assertEquals(book.isbn, bookType.isbn)
+        }
+
+        @Test
+        fun `exposes cover metadata when present`() {
+            val cover = BookCover.createEither(
+                storagePath = "/tmp/covers/cover.png",
+                contentType = "image/png",
+                description = "Cover text",
+            ).getOrNull()!!
+            val book = createValidBook(cover = cover)
+            val bookType = BookType(book)
+
+            assertEquals("Cover text", bookType.coverDescription)
+            assertEquals("image/png", bookType.coverContentType)
+            assertEquals("/api/books/${book.id}/cover", bookType.coverUrl)
         }
     }
 

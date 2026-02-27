@@ -9,6 +9,7 @@ This project is a Kotlin Spring Boot API using Hexagonal Architecture with Graph
 - **Either for errors** - Repository methods return `Either<Error, T>`, not exceptions
 - **Value classes unwrap for JPA** - Use `.value` when mapping to entities
 - **`toDomain()` returns Either** - Database data could be invalid
+- **File uploads are two-step** - REST multipart upload first, then GraphQL mutation to attach metadata
 
 ## Key Patterns
 
@@ -45,6 +46,7 @@ See the checklist in [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md#adding-a-new-
 ## Detailed Documentation
 
 - [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) - Architecture patterns, type mappings, persistence
+- [docs/FILE_UPLOADS.md](./docs/FILE_UPLOADS.md) - Book cover upload flow (REST upload + GraphQL attach)
 - [docs/ARROW.md](./docs/ARROW.md) - Arrow functional programming patterns
 - [docs/GRAPHQL_KOTLIN.md](./docs/GRAPHQL_KOTLIN.md) - GraphQL Kotlin reference
 
